@@ -36,12 +36,12 @@ controls.minDistance = 3
 
 // scroll based camera track in the tube
 let scrollProgress = 0 //between 0 and 1
-// let targetProgress = 0 //between 0 and 1
-// let scrollVelocity = 0 //scroll speed
-// const friction = 0.95 //how fast scroll velocity drops back down to 0
-// const acceleration = 0.00007
-// const maxVelocity = 0.05
-// const debug = document.querySelector('.scrollProgress')
+let targetProgress = 0 //between 0 and 1
+let scrollVelocity = 0 //scroll speed
+const friction = 0.95 //how fast scroll velocity drops back down to 0
+const acceleration = 0.00007
+const maxVelocity = 0.05
+const debug = document.querySelector('.scrollProgress')
 
 // automatic camera movement in the tube
 let autoCameraMovement = false 
@@ -138,15 +138,14 @@ function init(){
   tubeScene.add(meshes.debugPoints)
 
   //initial camera position: looking at the room
-  camera.position.set(-0.2, 1.1, 3)
-  camera.lookAt(new THREE.Vector3(-0.2, -0.3, -5.15))
-  controls.target = new THREE.Vector3(-0.2, -0.3, -5.15)
+  camera.position.set(-0.2, 2, 3)
+  camera.lookAt(new THREE.Vector3(-0.2, 0.3, -5.15))
+  controls.target = new THREE.Vector3(-0.2, 0.3, -5.15)
 
   //mouse control
   window.addEventListener('mousemove', (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-    mouse.y = -((event.clientY / window.innerHeight) * 2 - 1)
-    // console.log('Mouse position:', mouse.x, mouse.y)
+    mouse.y = -(event.clientY / window.innerHeight) -0.5
   })
 
   // instances()
@@ -209,8 +208,13 @@ function updateCameraOnFall() {
         duration: 0.5,
         overwrite: true,
         onUpdate: () => {
-            camera.lookAt(lookAtPosition)  // Update look-at during movement
-        }
+            camera.lookAt(lookAtPosition)  // update look-at during movement
+        },
+        //limit the zoom within the room
+        onStart: () => { //use onStart so that orbit controls is reset to the default once animation sequence starts and no longer in the room
+          controls.maxDistance = Infinity
+          controls.minDistance = 0
+        } 
     })
 
     camera.lookAt(lookAtPosition)
@@ -467,11 +471,10 @@ function animate(){
       renderer.render(tubeScene, camera)
   }
 
-  // subtle camera rotation based on mouse positionf
-  if (!autoCameraMovement) { // not in the tube
-    camera.rotation.y += (mouse.x * rotationSpeed)
-    camera.rotation.x += (mouse.y * rotationSpeed)
-    // console.log('Camera rotation:', camera.rotation.x, camera.rotation.y)
+  // // subtle camera rotation based on mouse positionf
+  if (!autoCameraMovement) { // not in the tube 
+    camera.position.x += mouse.x - camera.position.x
+    camera.position.y += -mouse.y - camera.position.y
   }
 
   requestAnimationFrame(animate)
