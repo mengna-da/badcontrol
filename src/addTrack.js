@@ -23,16 +23,15 @@ export const addTrack = () => {
 	const points = [
         new Vector3(-1, -1, -1),          
         new Vector3(4, -2, -4),   
-        new Vector3(6, -3, -6), 
-        new Vector3(3, 1, -8), 
+        new Vector3(5, -1, -6), 
+        new Vector3(2, 1, -8), 
         new Vector3(-4, -5, -10),
-        new Vector3(-8, 5, -12),
-        new Vector3(-10, 0, -5),  
-        new Vector3(0, -10, 5), 
-	]
+        new Vector3(-6, 0, -12),
+        new Vector3(-3, -2, -16)
+    ]  
     const curver = new CatmullRomCurve3(points)
     
-    // //Debug: create visual markers (red spheres) for each control point
+    // //for debug: create visual markers (red spheres) for each control point
     // const sphereGeometry = new SphereGeometry(0.2)
 	// const sphereMaterial = new MeshBasicMaterial({
 	// 	color: 'red',
@@ -48,7 +47,7 @@ export const addTrack = () => {
     const material = new MeshBasicMaterial({
 		wireframe: true,
 		side: DoubleSide,
-		color: 0xffffff, //white
+		color: 0xffffff, 
 		visible: false,
 	})
     const tube = new Mesh(geomotry, material)
@@ -66,7 +65,6 @@ const planeMaterial = new MeshBasicMaterial({
     map: texture,
     side: DoubleSide,
     transparent: true,
-    // opacity: 0.8, 
 })
 
 // create planes at regular intervals
@@ -91,10 +89,13 @@ function addWindows () {
     const planeGeometry = new PlaneGeometry(2, 1)
     const texturePaths = [
         'SEE.png',
-        'POWER.png',
+        'RABBIT-HOLES.png',
+        'USER-AGENCY-2.png',
         'SELF.png',
-        'OUTLIERS.png',
-        'AGENCY.png'
+        'SEE-2.png',
+        'PHANTOM.png',
+        'AGENCY.png',
+        'POWER.png'
     ]
     const textures = texturePaths.map(path => loader.load(path))
     const planeMaterial = new MeshBasicMaterial({

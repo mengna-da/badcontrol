@@ -2,7 +2,6 @@ import './style.css'
 import * as THREE from 'three'
 import { addWall, addPopUp } from './addWalls.js'
 import {addLight} from './addDefaultLight'
-import Model from './Model'
 import { HDRI } from './environment'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import gsap from 'gsap'
@@ -28,22 +27,36 @@ tubeScene.fog = new THREE.Fog(0x000000, 0.1, 5)
 // orbit control
 let controls = new OrbitControls(camera, renderer.domElement)
 controls.enabled = true
+controls.enableRotate = false
+controls.enablePan = false
+controls.enableZoom = true
+//limit the zoom within the room
+controls.maxDistance = 8 
+controls.minDistance = 3 
 
-// camera track
+// scroll based camera track in the tube
 let scrollProgress = 0 //between 0 and 1
-let targetProgress = 0 //between 0 and 1
-let scrollVelocity = 0 //scroll speed
-const friction = 0.95 //how fast scroll velocity drops back down to 0
-const acceleration = 0.00007
-const maxVelocity = 0.05
-const debug = document.querySelector('.scrollProgress')
+// let targetProgress = 0 //between 0 and 1
+// let scrollVelocity = 0 //scroll speed
+// const friction = 0.95 //how fast scroll velocity drops back down to 0
+// const acceleration = 0.00007
+// const maxVelocity = 0.05
+// const debug = document.querySelector('.scrollProgress')
+
 // automatic camera movement in the tube
 let autoCameraMovement = false 
-const fallSpeed = 0.0007
+const fallSpeed = 0.0009
 
 // raycast
 const pointer = new THREE.Vector2()
 const raycaster = new THREE.Raycaster()
+
+// set up mouse control for subtle camera rotation
+const mouse = {
+  x: 0,
+  y: 0
+}
+const rotationSpeed = 0.001
 
 init()
 function init(){
@@ -83,7 +96,7 @@ function init(){
   })
 
   meshes.leftWall = addWall({
-    texturePath: 'SEE.png',
+    texturePath: 'SEE-2.png',
     width: 5,
     height: 3.5,
     position: { x: -2.5, y: 1.75, z: 0 },
@@ -129,6 +142,13 @@ function init(){
   camera.lookAt(new THREE.Vector3(-0.2, -0.3, -5.15))
   controls.target = new THREE.Vector3(-0.2, -0.3, -5.15)
 
+  //mouse control
+  window.addEventListener('mousemove', (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+    mouse.y = -((event.clientY / window.innerHeight) * 2 - 1)
+    // console.log('Mouse position:', mouse.x, mouse.y)
+  })
+
   // instances()
   resize()
   animate()
@@ -136,6 +156,7 @@ function init(){
   handleScroll()
 }
 
+// scroll-based camera movement in the tube
 function handleScroll() {
 	// convert wheel events into camera movement
 	window.addEventListener('wheel', (event) => {
@@ -149,6 +170,7 @@ function handleScroll() {
 	})
 }
 
+//scroll-based camera movement in the tube
 function updateCamera(scrollProgress) {
 	// get current position on the track
 	const position =
@@ -172,13 +194,12 @@ function updateCamera(scrollProgress) {
 function updateCameraOnFall() {
   if (!autoCameraMovement) return
 
-  if(scrollProgress <0.98) {
     scrollProgress += fallSpeed
     scrollProgress = Math.min(scrollProgress, 0.98) // clamp between 0 and 0.98
 
     const position = meshes.track.geometry.parameters.path.getPointAt(scrollProgress)
     const lookAtPosition = meshes.track.geometry.parameters.path.getPointAt(
-        Math.min(scrollProgress + 0.01, 0.99) //limit the lookat camera to 0.99 instead of 1
+        Math.min(scrollProgress + 0.01, 1) 
     )
 
     gsap.to(camera.position, {
@@ -194,7 +215,6 @@ function updateCameraOnFall() {
 
     camera.lookAt(lookAtPosition)
   } 
-}
 
 function raycast(){
   window.addEventListener('click', (event)=>{ 
@@ -208,8 +228,8 @@ function raycast(){
     for (let i = 0; i < intersects.length; i++) {
       let object = intersects[i].object
       while (object) {
-        if (object.userData.groupName === 'popUp') {
-          // console.log("popup window clicked")
+        if (object.userData.groupName === 'popUp' && meshes.popUp.visible == true) {
+          console.log("popup window clicked")
           // meshes.popUp.visible = false
           explodeWalls()
           startTrackFollow()  // start to fall
@@ -225,27 +245,25 @@ function explodeWalls() {
   const timeline = gsap.timeline()
 
   const positions = {
-    popUp: {x: -2, y: 4, z: -12 },
-    frontWall: { x:5, y: 0, z: -10 },
-    backWall: { x: -8, y: 3, z: -5 },
+    popUp: {x: -2.5, y: -2, z: -16.5 },
+    frontWall: { x:-6, y: 1, z: -10 },
+    backWall: { x: 1, y: 3, z: -5 },
     leftWall: { x: -10, y: -1, z: -5 },
-    rightWall: { x: -4, y: -5, z: -10 },
-    floor: { x: 0, y: -8, z: 4 }, 
-    ceiling: {x: -7, y: -10, z: -14}
+    rightWall: { x: 0, y: -2, z: -10 },
+    floor: { x: 3, y: -5, z: -8 }, 
+    ceiling: {x: -2, y: -7, z: -15}
   }
 
-	// const points = [
-  //   new Vector3(-1, -1, -1),          
-  //   new Vector3(4, -2, -4),   
-  //   new Vector3(6, -3, -6), 
-  //   new Vector3(3, 1, -8), 
-  //   new Vector3(-4, -5, -10),
-  //   new Vector3(-8, 5, -12),
-  //   new Vector3(-10, 0, -5),  
-  //   new Vector3(0, -10, 5), 
+  // new Vector3(-1, -1, -1),          
+  // new Vector3(4, -2, -4),   
+  // new Vector3(5, -1, -6), 
+  // new Vector3(2, 1, -8), 
+  // new Vector3(-4, -5, -10),
+  // new Vector3(-6, 0, -12),
+  // new Vector3(-3, -2, -16)
 
   const rotations = {
-    popUp: { x: Math.PI * 3, y: Math.PI * 5, z: Math.PI},
+    popUp: { x: Math.PI * 2.8, y: Math.PI * 5, z: Math.PI},
     frontWall: { x: Math.PI * 5, y: Math.PI, z: Math.PI * 3 },
     backWall: { x: -Math.PI * 3, y: Math.PI * 5, z: -Math.PI },
     leftWall: { x: Math.PI, y: -Math.PI * 5, z: Math.PI * 3 },
@@ -258,7 +276,7 @@ function explodeWalls() {
   Object.entries(positions).forEach(([wall, position]) => {
     timeline.to(meshes[wall].position, {
       ...position,
-      duration: 27,
+      duration: 24,
       ease: "power2.out"
     }, "<")
   })
@@ -267,7 +285,7 @@ function explodeWalls() {
   Object.entries(rotations).forEach(([wall, rotation]) => {
     timeline.to(meshes[wall].rotation, {
       ...rotation,
-      duration: 27,
+      duration: 24,
       ease: "power2.out"
     }, "<")
   })  
@@ -373,28 +391,10 @@ function explodeWalls() {
 function startTrackFollow() {
   autoCameraMovement = true
   controls.enabled = false
+  controls.enableZoom = false
 
   const startPoint = meshes.track.geometry.parameters.path.getPointAt(0)
   const startLookAt = meshes.track.geometry.parameters.path.getPointAt(0.01)
-
-  const tl = gsap.timeline()
-  
-  tl.to(camera.position, {
-      x: startPoint.x,
-      y: startPoint.y,
-      z: startPoint.z,
-      duration: 3,
-      ease: "power2.inOut",
-      onComplete: () => scrollProgress = 0
-  })
-
-  tl.to(controls.target, {
-      x: startLookAt.x,
-      y: startLookAt.y,
-      z: startLookAt.z,
-      duration: 3,
-      ease: "power2.inOut"
-  }, "<") 
 
 }
 
@@ -434,6 +434,8 @@ function animate(){
     const floatingAmplitude = 0.1
     const floatingSpeed = 1.5
     
+    
+
     meshes.popUp.position.y = 1 + Math.sin(elapsedTime * floatingSpeed) * floatingAmplitude
   }
 
@@ -463,6 +465,13 @@ function animate(){
   if (autoCameraMovement) {
       renderer.autoClear = false
       renderer.render(tubeScene, camera)
+  }
+
+  // subtle camera rotation based on mouse positionf
+  if (!autoCameraMovement) { // not in the tube
+    camera.rotation.y += (mouse.x * rotationSpeed)
+    camera.rotation.x += (mouse.y * rotationSpeed)
+    // console.log('Camera rotation:', camera.rotation.x, camera.rotation.y)
   }
 
   requestAnimationFrame(animate)
